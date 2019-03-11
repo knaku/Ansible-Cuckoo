@@ -33,13 +33,13 @@
   debug:
     msg: "READ /data/moloch/README.txt and RUN sudo /data/moloch/bin/Configure"
 
-- name: Wait for /data/moloch/bin/Configure execution
+- name: READ PREVIOUS TASK. Wait for /data/moloch/bin/Configure execution
   pause:
 
 - name: Configure Moloch initialization
   become: true
   become_method: sudo
-  shell: "/data/moloch/db/db.pl http://localhost:9200 init"
+  shell: "echo INIT | /data/moloch/db/db.pl http://localhost:9200 init"
 
 - name: Configure Moloch user
   become: true
