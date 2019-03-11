@@ -18,7 +18,8 @@
 - name: Add gpg key used to sign packages [ 1 / 2 ]
   become: true
   become_method: sudo
-  shell: "gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89"
+  shell: "curl https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --import"
+  warn: false
 
 - name: Add gpg key used to sign packages [ 2 / 2 ]
   become: true
@@ -41,10 +42,16 @@
     state: latest
     update_cache: true
 
+- name: Check if torrc exists
+  stat:
+    path: "/etc/tor/torrc"
+  register: file_exist
+
 - name: Backup torrc file
   become: true
   become_method: sudo
   command: mv /etc/tor/torrc /etc/tor/torrc.original
+  when: file_exist.stat.exists
 
 - name: Copy local torrc to /etc/tor
   become: true
