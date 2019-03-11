@@ -1,0 +1,15 @@
+---
+  python_package:
+    -   pyvmomi
+    -   pydeep
+    -   m2crypto
+    -   mitmproxy
+    -   pillow
+    -   pytesseract
+    -   protobuf
+    -   sflock
+    -   distorm3
+    -   pycrypto
+    -   openpyxl
+    -   ujson
+    -   yara-python
