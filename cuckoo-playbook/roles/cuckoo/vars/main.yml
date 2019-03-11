@@ -1,0 +1,17 @@
+---
+  cuckoo_conf:
+    -   auxiliary
+    -   avd
+    -   cuckoo
+    -   esx
+    -   kvm
+    -   memory
+    -   physical
+    -   processing
+    -   qemu
+    -   reporting
+    -   routing
+    -   virtualbox
+    -   vmware
+    -   vsphere
+    -   xenserver

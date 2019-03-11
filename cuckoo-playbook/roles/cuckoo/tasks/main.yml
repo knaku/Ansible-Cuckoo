@@ -21,101 +21,22 @@
 
 - name: Setup Cuckoo Working Directory - {{ cwd }}
   become: true
-  become_method: sudo   
+  become_method: sudo
   become_user: "{{ cuckoo_user }}"
   command: "{{ cuckoo_dir }}/bin/cuckoo --cwd {{ cwd }}"
   failed_when: result.rc != 1 and result.rc != 0
   register: result
 
-- name: Backup auxiliary.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/auxiliary.conf {{ cwd }}/conf/auxiliary.conf.original"
+- name: Check if {{ cuckoo_conf }} exists
+  stat: "{{ cwd }}/conf/{{ cuckoo_conf }}.conf"
+  register: file_exist
 
-- name: Backup avd.conf file
+- name: Backup of {{ cuckoo_conf }}
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/avd.conf {{ cwd }}/conf/avd.conf.original"
-
-- name: Backup cuckoo.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/cuckoo.conf {{ cwd }}/conf/cuckoo.conf.original"
-
-- name: Backup esx.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/esx.conf {{ cwd }}/conf/esx.conf.original"
-
-- name: Backup kvm.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/kvm.conf {{ cwd }}/conf/kvm.conf.original"
-
-- name: Backup memory.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/memory.conf {{ cwd }}/conf/memory.conf.original"
-
-- name: Backup physical.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/physical.conf {{ cwd }}/conf/physical.conf.original"
-
-- name: Backup processing.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/processing.conf {{ cwd }}/conf/processing.conf.original"
-
-- name: Backup qemu.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/qemu.conf {{ cwd }}/conf/qemu.conf.original"
-
-- name: Backup reporting.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/reporting.conf {{ cwd }}/conf/reporting.conf.original"
-
-- name: Backup routing.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/routing.conf {{ cwd }}/conf/routing.conf.original"
-
-- name: Backup virtualbox.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/virtualbox.conf {{ cwd }}/conf/virtualbox.conf.original"
-
-- name: Backup vmware.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/vmware.conf {{ cwd }}/conf/vmware.conf.original"
-
-- name: Backup vsphere.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/vsphere.conf {{ cwd }}/conf/vsphere.conf.original"
-
-- name: Backup xenserver.conf file
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "mv {{ cwd }}/conf/xenserver.conf {{ cwd }}/conf/xenserver.conf.original"
+  command: mv "{{ cwd }}/conf/{{ cuckoo_conf }}.conf" "{{ cwd }}/conf/{{ cuckoo_conf }}.conf.original"
+  when: file_exist.stat.exists
 
 - name: Copy local Cuckoo configuration files to {{ cwd }}/conf
   become: true
