@@ -1,11 +1,11 @@
 ---
   ubuntu_package:
-    -   build-essential package
+    -   build-essential
     -   python
     -   python-pip
     -   python-dev
-    -   pyhton-virtualenv
-    -   pyhton-setuptools
+    -   python-virtualenv
+    -   python-setuptools
     -   libffi-dev
     -   libssl-dev
     -   libxml2-dev
@@ -16,7 +16,7 @@
     -   libvirt-bin
     -   ubuntu-vm-builder
     -   bridge-utils
-    -   pyhton-libvirt
+    -   python-libvirt
     -   ssdeep
     -   libfuzzy-dev
     -   zlib1g-dev

@@ -28,7 +28,8 @@
   register: result
 
 - name: Check if {{ cuckoo_conf }} exists
-  stat: "{{ cwd }}/conf/{{ cuckoo_conf }}.conf"
+  stat:
+    path: "{{ cwd }}/conf/{{ cuckoo_conf }}.conf"
   register: file_exist
 
 - name: Backup of {{ cuckoo_conf }}
