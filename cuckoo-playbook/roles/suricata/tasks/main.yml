@@ -1,4 +1,40 @@
 ---
+- name: Check for already running suricata processes
+  shell: "ps -ef | grep -v grep | grep -w suricata | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill suricata if it's running
+  become: true
+  become_method: sudo
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+
+- wait_for:
+    path: "/proc/{{ item }}/status"
+    state: absent
+  with_items: "{{ running_processes.stdout_lines }}"
+  ignore_errors: yes
+  register: killed_processes
+
+- name: Force kill stuck processes
+  become: true
+  become_method: sudo
+  shell: "kill -9 {{ item }}"
+  with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
+
+- name: Check if {{ cuckoo_conf }} exists
+  stat:
+    path: "/var/run/suricata.pid"
+  register: file_exist
+
+- name: remove pid files
+  become: true
+  become_method: sudo
+  file:
+    state: absent
+    path: "/var/run/suricata.pid"
+  when: file_exist.stat.exists
+
 - name: Download and uncompress Suricata source
   become: true
   become_method: sudo
@@ -100,11 +136,17 @@
     group: "{{ cuckoo_user }}"
     mode: 0775
 
+- name: Check if suricata.yaml exists
+  stat:
+    path: "/etc/suricata/.conf"
+  register: file_exist
+
 - name: Backup suricata.yaml file
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
   command: mv /etc/suricata/suricata.yaml /etc/suricata/suricata.yaml.original
+  when: file_exist.stat.exists
 
 - name: Copy local suricata.yaml to /etc/suricata
   become: true
