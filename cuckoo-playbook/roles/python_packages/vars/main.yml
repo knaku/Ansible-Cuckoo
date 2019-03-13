@@ -3,7 +3,7 @@
     -   pyvmomi
     -   pydeep
     -   m2crypto
-    -   mitmproxy
+#    -   mitmproxy
     -   pillow
     -   pytesseract
     -   protobuf
