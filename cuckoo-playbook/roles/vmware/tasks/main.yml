@@ -1,0 +1,76 @@
+---
+- name: Download VMware workstation bundle
+  get_url:
+    url: https://www.vmware.com/go/getWorkstation-linux
+    dest: /tmp/vmware-workstation.bundle
+    mode: 0551
+
+- name: Install VMware workstation
+  become: true
+  become_method: sudo
+  command: /tmp/vmware-workstation.bundle --eulas-agreed --required -i /tmp/vmware-workstation.bundle
+
+- name: Change owner of {{ cuckoo_appliance_folder }} folder to "{{ cuckoo_user }}"
+  become: true
+  become_method: sudo
+  file:
+    path: "{{ cuckoo_appliance_folder }}"
+    state: directory
+    owner: "{{ cuckoo_user }}"
+    group: "{{ cuckoo_user }}"
+
+- name: Verify that vmx exists
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  shell: vmrun list "{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+  register: vm_name
+  failed_when: vm_name.rc != 1
+
+
+# A check of network interface and ip should be done here. I do not know of any way to achive this at the current time in Workstation Pro. Must be done manually so for now
+- name: Setup network intereface corretly with GUI through vmware-netcfg or manually edit the given ip address after installtion.
+  pause:
+
+- name: Start VM {{ cuckoo_vm_label }}
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  command: "vmrun start {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx nogui"
+
+- name: Wait for VM get fully booted
+  pause:
+    minutes: 3
+
+- name: Check for snapshots from {{ cuckoo_vm_label }}
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  command: "vmrun listSnapshots {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+  register: vm_snapshots
+  failed_when: vm_snapshots.rc != 1
+
+- name: Take a VM snapshot for {{ cuckoo_vm_label }}
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  command: "vmrun snapshot {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx {{ cuckoo_vm_label }}-snapshot1"
+  when: "'does not have' in vm_snapshots.stdout"
+
+- name: Poweroff VM {{ cuckoo_vm_label }}
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  command: "vmrun stop {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+
+- name: Restore VM snapshot for {{ cuckoo_vm_label }}
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  command: "vmrun {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx revertToSnapshot {{ cuckoo_vm_label }}-snapshot1"
+
+
+
+
+
+# AppArmor profile to be included?
