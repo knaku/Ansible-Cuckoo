@@ -8,7 +8,7 @@
 - name: Install VMware workstation
   become: true
   become_method: sudo
-  command: /tmp/vmware-workstation.bundle --eulas-agreed --required -i /tmp/vmware-workstation.bundle
+  command: /tmp/vmware-workstation.bundle --eulas-agreed --required --console -i /tmp/vmware-workstation.bundle
 
 - name: Change owner of {{ cuckoo_appliance_folder }} folder to "{{ cuckoo_user }}"
   become: true
@@ -16,6 +16,7 @@
   file:
     path: "{{ cuckoo_appliance_folder }}"
     state: directory
+    recurse: yes
     owner: "{{ cuckoo_user }}"
     group: "{{ cuckoo_user }}"
 
@@ -23,9 +24,9 @@
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
-  shell: vmrun list "{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+  shell: "[[ -f {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx ]] && echo \"VM does not exist\" || echo \"VM does exist\""
   register: vm_name
-  failed_when: vm_name.rc != 1
+  failed_when: vm_name.stdout_lines == "VM does not exist"
 
 
 # A check of network interface and ip should be done here. I do not know of any way to achive this at the current time in Workstation Pro. Must be done manually so for now
@@ -48,14 +49,13 @@
   become_user: "{{ cuckoo_user }}"
   command: "vmrun listSnapshots {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
   register: vm_snapshots
-  failed_when: vm_snapshots.rc != 1
 
 - name: Take a VM snapshot for {{ cuckoo_vm_label }}
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
   command: "vmrun snapshot {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx {{ cuckoo_vm_label }}-snapshot1"
-  when: "'does not have' in vm_snapshots.stdout"
+  when: vm_snapshots.stdout_lines == 'Total snapshots 0'
 
 - name: Poweroff VM {{ cuckoo_vm_label }}
   become: true
@@ -67,7 +67,7 @@
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
-  command: "vmrun {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx revertToSnapshot {{ cuckoo_vm_label }}-snapshot1"
+  command: "vmrun revertToSnapshot \"{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx\" {{ cuckoo_vm_label }}-snapshot1"
 
 
 

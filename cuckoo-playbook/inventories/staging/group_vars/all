@@ -25,7 +25,7 @@ virtualbox_ext_pack_ver: 5.1.32-120294
 ##### Cuckoo Sandbox guest VM #############
 
 cuckoo_appliance: /home/cuckoo1.ova
-cuckoo_appliance_folder: /home/vmware/cuckoo
+cuckoo_appliance_folder: /home/cuckoo/vmware/cuckoo1
 cuckoo_vm_label: cuckoo1
 
 ##### Date & Time #########################
