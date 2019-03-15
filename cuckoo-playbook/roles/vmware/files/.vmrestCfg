@@ -1,0 +1,4 @@
+port=8697
+username=ansible
+password=$2a$14$4fw9ta0ui/gEcfE6lpvxy.519zztmcvjLn93Vx4NREBDBNvkWRXa6
+salt=FT9A4K}N%s1j08Bd
