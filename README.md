@@ -48,7 +48,7 @@ Installation of the Cuckoo environment is done with the following steps:
 
 vmwareNetworkAdapter is only needed if you use VMware as your virtualizer. It is only temporary for now.
 ```
-ansible-playbook -i inventories/production site.yml --extra-vars "distribution=artful nic=enp0s3 vmwareNetworkAdapter=vmnet1"
+ansible-playbook -i inventories/production site.yml --extra-vars "distribution=artful nic=enp0s3 vmwareNetworkAdapter=vmnet1 user=ubuntu"
 ```
 
 By default, Cuckoo will be installed to `/opt/cuckoo` inside a virtual environment and a `cuckoo` user and group will be created. These values can be modified at **group_vars** file:

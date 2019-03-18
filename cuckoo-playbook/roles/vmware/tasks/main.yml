@@ -10,6 +10,22 @@
   become_method: sudo
   command: /tmp/vmware-workstation.bundle --eulas-agreed --required --console -i /tmp/vmware-workstation.bundle
 
+- name: Verify that vmx exists
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  shell: "[[ -f {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx ]] && echo \"VM does not exist\" || echo \"VM does exist\""
+  register: vm_name
+
+- name: Copy VM folder from root of host to Cuckoo User
+  become: true
+  become_method: sudo
+  copy:
+    src: "/home/{{ user }}{{ cuckoo_appliance_folder }}/"
+    dest: "/home/cuckoo/vmware/"
+    mode: 0644
+  failed_when: vm_name.stdout_lines == "VM does not exist"
+
 - name: Change owner of {{ cuckoo_appliance_folder }} folder to "{{ cuckoo_user }}"
   become: true
   become_method: sudo
@@ -19,15 +35,6 @@
     recurse: yes
     owner: "{{ cuckoo_user }}"
     group: "{{ cuckoo_user }}"
-
-- name: Verify that vmx exists
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  shell: "[[ -f {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx ]] && echo \"VM does not exist\" || echo \"VM does exist\""
-  register: vm_name
-  failed_when: vm_name.stdout_lines == "VM does not exist"
-
 
 - name: Copy vmrest api configuration file to cuckoo host
   become: true
