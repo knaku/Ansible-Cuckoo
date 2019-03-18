@@ -21,7 +21,7 @@
   become: true
   become_method: sudo
   copy:
-    src: "/home/{{ user }}{{ cuckoo_appliance_folder }}/"
+    src: "/home/{{ user }}/{{ cuckoo_vm_label }}"
     dest: "/home/cuckoo/vmware/"
     mode: 0644
   failed_when: vm_name.stdout_lines == "VM does not exist"
