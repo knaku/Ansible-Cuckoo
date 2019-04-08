@@ -42,13 +42,34 @@
     dest: "/home/cuckoo/vmware/"
   when: vmExists.stat.exists == false
 
-- name: Change owner of {{ cuckoo_appliance_folder }} folder to "{{ cuckoo_user }}"
+- name: Change owner of "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }} folder to "{{ cuckoo_user }}"
   become: true
   become_method: sudo
   file:
-    path: "{{ cuckoo_appliance_folder }}"
+    path: "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}"
     state: directory
+    mode: u=rw,g=,o=
     recurse: yes
+    owner: "{{ cuckoo_user }}"
+    group: "{{ cuckoo_user }}"
+
+- name: Change /home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }} mode to 755
+  become: true
+  become_method: sudo
+  file:
+    path: "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}"
+    state: directory
+    mode: 0755
+    owner: "{{ cuckoo_user }}"
+    group: "{{ cuckoo_user }}"
+
+- name: Change mode of {{ cuckoo_vm_label }}.vmx folder to 700
+  become: true
+  become_method: sudo
+  file:
+    path: "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+    state: file
+    mode: 0700
     owner: "{{ cuckoo_user }}"
     group: "{{ cuckoo_user }}"
 
