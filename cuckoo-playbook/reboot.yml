@@ -1,0 +1,7 @@
+# run [ ansible-playbook -i inventories/staging site.yml --extra-vars "distribution=artful"    ] for local  setup
+# run [ ansible-playbook -i inventories/production site.yml --extra-vars "distribution=artful" ] for remote setup
+---
+- hosts: all
+  gather_facts: false
+  roles:
+    - reboot_virtualbox
