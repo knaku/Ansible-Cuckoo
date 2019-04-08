@@ -4,4 +4,5 @@
 - hosts: all
   gather_facts: false
   roles:
-    - reboot_virtualbox
+#    - reboot_virtualbox
+#    - reboot_vmware
