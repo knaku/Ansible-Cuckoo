@@ -169,6 +169,14 @@
 
 # wait 1 minute?
 
+- name: Remove .lck if exists
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  file:
+    state: absent
+    path: "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx.lck"
+
 - name: Revert to VM snapshot {{ cuckoo_vm_label }}
   become: true
   become_method: sudo
