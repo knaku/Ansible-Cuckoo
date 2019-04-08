@@ -10,21 +10,37 @@
   become_method: sudo
   command: /tmp/vmware-workstation.bundle --eulas-agreed --required --console -i /tmp/vmware-workstation.bundle
 
-- name: Verify that vmx exists
+- name: Check if VM already exists on Cuckoo host
+  become: true
+  become_method: sudo
+  stat:
+    path: "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+  register: vmExists
+
+- name: Check if VM is available on Ansible master for transfering to Cuckoo host
+  become: true
+  become_method: sudo
+  local_action: stat path="{{ vmx_location }}"
+  register: vmSource
+
+- debug:
+    msg: Fails when VM is not already on Cuckoo host and VM is not available for transfer
+  failed_when:
+    - vmSource.stat.exists == false
+    - vmExists.stat.exists == false
+
+#- name: debug             #  debug function
+#  debug:
+#    msg: vmSource
+
+- name: Copy VM folder from ansible master to Cuckoo host
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
-  shell: "[[ -f {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx ]] && echo \"VM does not exist\" || echo \"VM does exist\""
-  register: vm_name
-
-- name: Copy VM folder from root of host to Cuckoo User
-  become: true
-  become_method: sudo
   copy:
-    src: "/home/{{ user }}/{{ cuckoo_vm_label }}"
+    src: "/home/bach/martin/ansible/images/cuckoo1"
     dest: "/home/cuckoo/vmware/"
-    mode: 0644
-  failed_when: vm_name.stdout_lines == "VM does not exist"
+  when: vmExists.stat.exists == false
 
 - name: Change owner of {{ cuckoo_appliance_folder }} folder to "{{ cuckoo_user }}"
   become: true
