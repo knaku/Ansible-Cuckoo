@@ -79,8 +79,8 @@
   become_user: "{{ cuckoo_user }}"
   copy:
     src: "{{ item }}"
-    dest: "/home/cuckoo/"
-    mode: 0644
+    dest: "/home/{{ cuckoo_user }}/"
+    mode: 0600
   with_fileglob:
     - .vmrestCfg
 
