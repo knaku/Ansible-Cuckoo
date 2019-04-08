@@ -8,7 +8,7 @@
 - name: Install VMware workstation
   become: true
   become_method: sudo
-  command: /tmp/vmware-workstation.bundle --eulas-agreed --required --console -i /tmp/vmware-workstation.bundle
+  command: sudo /tmp/vmware-workstation.bundle --console --regular --required --eulas-agreed --set-setting=vmware-workstation serialNumber {{ license }}
 
 - name: Check if VM already exists on Cuckoo host
   become: true
