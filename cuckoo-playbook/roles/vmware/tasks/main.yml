@@ -115,6 +115,11 @@
 #  debug:
 #    msg: "{{ existingVM.stdout_lines }}"
 
+- name: Configure vmnet{{ vmwareNetworkAdapter }} to be up
+  become: true
+  become_method: sudo
+  command: ifconfig vmnet{{ vmwareNetworkAdapter }} 192.168.56.1 netmask 255.255.255.0 broadcast 192.168.56.255 up
+
 - name: Verify and find ID of our machine
   become: true
   become_method: sudo
@@ -122,53 +127,188 @@
   shell: "echo {{ existingVM.stdout_lines }} | grep -A 1 /home/cuckoo/vmware/cuckoo1/cuckoo1.vmx | awk -F ':' '{print $2}' | sed 's/path//g' | sed 's/ \"//g' | sed 's/\",, u   \"//g'"
   register: vmId
 
-#- name: Print vmId       #  debug function
-#  debug:
-#    msg: "{{ vmId.stdout }}"
+  #- name: Print vmId       #  debug function
+  #  debug:
+  #    msg: "{{ vmId.stdout }}"
 
-- name: Configure vmnet{{ vmwareNetworkAdapter }} to be up
-  become: true
-  become_method: sudo
-  command: ifconfig vmnet{{ vmwareNetworkAdapter }} 192.168.56.1 netmask 255.255.255.0 broadcast 192.168.56.255 up
-
-- name: Start VM {{ cuckoo_vm_label }}
+- name: Check for snapshots from "{{ cuckoo_vm_label }}"
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
-  command: "vmrun start {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx nogui"
-
-- name: Wait for VM get fully booted
-  pause:
-    minutes: 3
-
-- name: Check for snapshots from {{ cuckoo_vm_label }}
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "vmrun listSnapshots {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+  command: vmrun -T ws listSnapshots "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
   register: vm_snapshots
+
+- name: Extract number of snapshot
+  shell: "echo {{ vm_snapshots.stdout }} | sed 's/Total snapshots: //g'"
+  register: number_snapshots
+
+- name: Please start your VM manually and wait for it to finish booting before continuing.
+  pause:
+  when: number_snapshots.stdout == "0"
+
+# AN AUTOMATIC START OF VM SHOULD BE DONE HERE IF VM IS NOT PROPERPLY SHUTDOWN, implement: (if you got starting and stopping through ansible works, check bottom of this file for what have've tried)
+
+# start
+
+# wait 3 minutes?
 
 - name: Take a VM snapshot for {{ cuckoo_vm_label }}
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
-  command: "vmrun snapshot {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx {{ cuckoo_vm_label }}-snapshot1"
-  when: vm_snapshots.stdout_lines == 'Total snapshots 0'
+  command: vmrun -T ws snapshot "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx" "{{ cuckoo_vm_label }}-snapshot1"
+  when: number_snapshots.stdout == "0"
 
-- name: Poweroff VM {{ cuckoo_vm_label }}
+- name: Please stop your VM manually and wait for it to finish shuting down before finishing.
+  pause:
+  when: number_snapshots.stdout == "0"
+
+# AN AUTOMATIC STOP OF VM SHOULD BE DONE HERE IF, implement: (if you got starting and stopping through ansible works, check bottom of this file for what have've tried)
+
+# stop
+
+# wait 1 minute?
+
+- name: Revert to VM snapshot {{ cuckoo_vm_label }}
   become: true
   become_method: sudo
   become_user: "{{ cuckoo_user }}"
-  command: "vmrun stop {{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+  command: vmrun -T ws revertToSnapshot "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx" "{{ cuckoo_vm_label }}-snapshot1"
+  register: vmSnapshot
+  ignore_errors: true
 
-- name: Restore VM snapshot for {{ cuckoo_vm_label }}
-  become: true
-  become_method: sudo
-  become_user: "{{ cuckoo_user }}"
-  command: "vmrun revertToSnapshot \"{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx\" {{ cuckoo_vm_label }}-snapshot1"
+- debug:
+    msg: 'Something happend when reverting to snapshot, this was the error message: {{ vmSnapshot }}"'
+  failed_when:
+  - "'Error: The file is already in use' not in vmSnapshot.stdout_lines"
+  - vmSnapshot.rc == "255"
 
+- debug:
+    msg: Something went wrong when reverting to snapshot
+  failed_when: "'Error: The file is already in use' not in vmSnapshot.stdout_lines or vmSnapshot.rc == '255'"
 
+- debug:
+    msg: VMware says that the Snapshot is already applied, if you are not 100% certain that it's applied propperly and ready for use you should check this manually. At least remember this if you get any problems with cuckoo and the VM.
+  when: "'Error: The file is already in use' == vmSnapshot.stdout"
 
+- name: If paused read message above, else ignore this task
+  pause:
+  when: "'Error: The file is already in use' == vmSnapshot.stdout"
 
 
 # AppArmor profile to be included?
+
+
+
+
+##### Different ways tried to start a VM in workstation #####
+
+# 1  - run vmrun start command
+#- name: Start VM {{ cuckoo_vm_label }}
+#  become: true
+#  become_method: sudo
+#  become_user: "{{ cuckoo_user }}"
+#  shell: "vmrun start \"/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx\" nogui"
+
+
+
+# 2  - create a vmrun start script, then run it
+#- name: create startVM.sh - vmrun
+#  become: true
+#  become_method: sudo
+#  become_user: "{{ cuckoo_user }}"
+#  shell: |
+#    echo '#!/bin/sh
+#    vmrun start "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx" nogui' > /home/{{ cuckoo_user }}/startVM.sh
+#    chmod +x /home/{{ cuckoo_user }}/startVM.sh
+
+#- name: Run startVM.sh
+#  become: true
+#  become_method: sudo
+#  become_user: "{{ cuckoo_user }}"
+#  command: /home/"{{ cuckoo_user }}"/startVM.sh
+
+
+
+# 3  - use ansible argv to execute vmrun start command
+#- name: Start vm
+#  become: true
+#  become_method: sudo
+#  become_user: "{{ cuckoo_user }}"
+#  command:
+#  args:
+#    argv:
+#      - vmrun
+#      - start
+#      - "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx"
+#      - nogui
+
+
+
+# 4  - use the vmrest api, both using command from ansible, and creating a shell script with the RESTapi call and then
+#      run the created script with ansible, as shown below. I think it works but I am not entierly sure.
+#- name: Create startVm.sh
+#  become: true
+#  become_method: sudo
+#  become_user: "{{ cuckoo_user }}"
+#  command: |
+#    echo "CT='Content-Type:application/vnd.vmware.vmw.rest-v1+json'
+#    AUTH='Authorization: Basic YW5zaWJsZTpBbnNpYmxlITIzNA=='
+
+#    IFS='\n' body=$(cat << EOF
+#    @- <<REQUEST_BODY
+#    off
+#    REQUEST_BODY
+#    EOF);
+
+#    TEST='curl  -s http://127.0.0.1:8697/api/vms/6PC4JRIGRQDNEKAAL397QL2VPUCSAQNJ/power -X PUT --header '$CT' --header '$AUTH'-d $body'
+#    echo $TEST
+#    $TEST" > /home/{{ cuckoo_user }}/startVM.sh
+#    chmod +x /home/{{ cuckoo_user }}/startVM.sh
+
+
+
+
+# After a sucessful boot you should wait for a couple of minutes to let Windows or other guest vm to boot.
+
+
+
+#- name: Wait for VM get fully booted
+#  pause:
+#    minutes: 3
+
+
+
+# When you want to power it of again or when it is not necessary to keep it alive any more, same methods tried as with powering on. I could not get this to work either.
+# Just copy start command and switch out start with stop. For RESTapi calls switch off out with on in the body (between REQUEST_BODY)
+# Should probably add a wait to let it shutdown properly as well.
+
+
+#- name: Poweroff VM {{ cuckoo_vm_label }}
+#  become: true
+#  become_method: sudo
+#  become_user: "{{ cuckoo_user }}"
+#  command: "vmrun stop \"/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx\""
+
+#- name: Create powerOffVm.sh - vmrun
+#  become: true
+#  become_method: sudo
+#  become_user: "{{ cuckoo_user }}"
+#  shell: |
+#    echo '#!/bin/sh
+#    vmrun stop "/home/{{ cuckoo_user }}/{{ cuckoo_appliance_folder }}/{{ cuckoo_vm_label }}.vmx" nogui' > /home/{{ cuckoo_user }}/stopVM.sh
+#    chmod +x /home/{{ cuckoo_user }}/stopVM.sh
+
+# 				- vmrest api script
+#  shell: |
+#    echo 'curl -s 'http://127.0.0.1:8697/api/vms/{{ vmId.stdout }}/power' -X PUT --header 'Content-Type: application/vnd.vmware.vmw.rest-v1+json' --header 'Accept: application/vnd.vmware.vmw.rest-v1+json' --header 'Authorization: Basic YW5zaWJsZTpBbnNpYmxlITIzNA==' -d @- <<REQUEST_BODY
+#    off
+#    REQUEST_BODY' > /home/{{ cuckoo_user }}/powerOffVM.sh;
+#    chmod +x /home/{{ cuckoo_user }}/powerOffVM.sh
+
+
+#- name: Run stopVM.sh
+#  become: true
+#  become_method: sudo
+#  become_user: "{{ cuckoo_user }}"
+#  command: /home/"{{ cuckoo_user }}"/stopVM.sh
