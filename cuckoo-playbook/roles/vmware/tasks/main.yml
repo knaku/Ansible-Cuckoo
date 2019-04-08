@@ -84,6 +84,18 @@
   with_fileglob:
     - .vmrestCfg
 
+- name: Copy cuckoo configuration file to cuckoo host
+  become: true
+  become_method: sudo
+  become_user: "{{ cuckoo_user }}"
+  copy:
+    src: "{{ item }}"
+    dest: "/home/{{ cuckoo_user }}/.cuckoo/conf/"
+    mode: 0644
+  force: yes
+  with_fileglob:
+    - cuckoo.conf
+
 - name: Start vmrest api
   become: true
   become_method: sudo
